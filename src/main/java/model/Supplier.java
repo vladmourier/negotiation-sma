@@ -5,8 +5,7 @@ import java.util.HashMap;
 /**
  * Created by Vlad on 03/01/2017.
  */
-public class Supplier {
-    String name;
+public class Supplier extends Agent {
     HashMap<Flight, Integer> minPricePerFlight;
 
     public Supplier(){
