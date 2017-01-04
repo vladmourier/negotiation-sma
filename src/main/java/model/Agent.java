@@ -16,10 +16,12 @@ public class Agent {
 
     String name;
     int Id;
+    protected int nbPropositions;
 
     public Agent(String name, int id) {
         this.name = name;
         Id = id;
+        nbPropositions = 0;
     }
 
 
@@ -45,5 +47,13 @@ public class Agent {
                 "name:'" + name + '\'' +
                 ", Id:" + Id +
                 '}';
+    }
+
+    public int getNbPropositions() {
+        return nbPropositions;
+    }
+
+    public void setNbPropositions(int nbPropositions) {
+        this.nbPropositions = nbPropositions;
     }
 }
