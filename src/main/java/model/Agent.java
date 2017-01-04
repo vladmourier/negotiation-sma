@@ -5,16 +5,14 @@ import org.json.JSONObject;
 import java.util.HashMap;
 
 /**
- * Created by Vlad on 03/01/2017.
+ * Represents the common attributes/behavior to
  */
 public class Agent {
 
+    /**
+     * List of all agents ever created
+     */
     public static HashMap<Integer, Agent> agents = new HashMap<Integer, Agent>();
-
-
-    public static Agent createFromJSON(JSONObject jsonObject) {
-        return new Agent(jsonObject.getString("name"), jsonObject.getInt("Id"));
-    };
 
     String name;
     int Id;

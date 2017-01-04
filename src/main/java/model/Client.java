@@ -7,7 +7,7 @@ import model.communication.events.MessageReceivedListener;
 import java.util.HashMap;
 
 /**
- * Created by Vlad on 03/01/2017.
+ * Represents a customer able to negociate with ticket Suppliers
  */
 public class Client extends Agent implements Runnable, MessageReceivedListener {
     HashMap<Flight, Integer> maxPricePerFlight;
@@ -20,6 +20,9 @@ public class Client extends Agent implements Runnable, MessageReceivedListener {
         this.agentSocket = new AgentSocket(Id);
         this.wallet = wallet;
         this.agentSocket.addMessageReceivedListener(this);
+      
+        maxPricePerFlight.put(new Flight(Destination.LYON, Destination.PARIS), 80);
+        maxPricePerFlight.put(new Flight(Destination.PARIS, Destination.LYON), 80);
     }
 
     public void run() {

@@ -18,6 +18,7 @@ public class Ticket {
 
     public Ticket(int id, Destination from, Destination to, int price, Date date) {
         this.f = new Flight(from, to);
+
         this.price = price;
         this.date = date;
     }

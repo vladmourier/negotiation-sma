@@ -18,7 +18,10 @@ public class Supplier extends Agent implements Runnable, MessageReceivedListener
 
     public Supplier(String name, int id) {
         super(name, id);
+
         minPricePerFlight = new HashMap<Flight, Integer>();
+        minPricePerFlight.put(new Flight(Destination.PARIS, Destination.LYON), 100);
+        minPricePerFlight.put(new Flight(Destination.LYON, Destination.PARIS), 200);
         this.agentSocket = new AgentSocket(Id);
         this.agentSocket.addMessageReceivedListener(this);
     }
