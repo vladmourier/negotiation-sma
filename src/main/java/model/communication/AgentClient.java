@@ -15,7 +15,6 @@ class AgentClient extends AgentConnector {
     void send(int agentRecipient, String message) {
         try {
             Socket socket = new Socket("localhost", AgentConnector.BASE_SERVER_PORT + agentRecipient);
-//            System.out.println("Socket local port : " + socket.getLocalPort());
             this.OS = socket.getOutputStream();
             this.BOS = new BufferedOutputStream(OS);
             this.BOS.write(message.getBytes());

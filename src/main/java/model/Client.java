@@ -3,7 +3,7 @@ package model;
 import java.util.HashMap;
 
 /**
- * Created by Vlad on 03/01/2017.
+ * Represents a customer able to negociate with ticket Suppliers
  */
 public class Client extends Agent {
     HashMap<Flight, Integer> maxPricePerFlight;
@@ -14,6 +14,9 @@ public class Client extends Agent {
         this.name = name;
         this.wallet = wallet;
         maxPricePerFlight = new HashMap<Flight, Integer>();
+
+        maxPricePerFlight.put(new Flight(Destination.LYON, Destination.PARIS), 80);
+        maxPricePerFlight.put(new Flight(Destination.PARIS, Destination.LYON), 80);
 
     }
 }
