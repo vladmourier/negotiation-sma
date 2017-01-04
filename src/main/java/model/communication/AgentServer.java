@@ -33,7 +33,7 @@ public class AgentServer extends AgentConnector implements Runnable{
         } catch (IOException e) {
             e.printStackTrace();
         }
-        listeners = new CopyOnWriteArrayList<>();
+        listeners = new CopyOnWriteArrayList<MessageReceivedListener>();
     }
 
     void addMessageReceivedListener(MessageReceivedListener l) {
@@ -53,7 +53,6 @@ public class AgentServer extends AgentConnector implements Runnable{
         }
     }
 
-    @Override
     public void run() {
         try {
             byte[] buffer = new byte[1024];

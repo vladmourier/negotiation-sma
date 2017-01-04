@@ -8,11 +8,9 @@ import java.util.HashMap;
 public class Supplier extends Agent {
     HashMap<Flight, Integer> minPricePerFlight;
 
-    public Supplier(){
-        minPricePerFlight = new HashMap<>();
-    }
 
-    public Supplier(String name) {
-        this.name = name;
+    public Supplier(String name, int id) {
+        super(name, id);
+        minPricePerFlight = new HashMap<Flight, Integer>();
     }
 }

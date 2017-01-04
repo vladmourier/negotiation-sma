@@ -9,14 +9,11 @@ public class Client extends Agent {
     HashMap<Flight, Integer> maxPricePerFlight;
     int wallet;
 
-    public Client(){
-        super();
-        maxPricePerFlight = new HashMap<>();
-    }
-
-    public Client(String name, int wallet) {
-        this();
+    public Client(String name, int wallet, int id) {
+        super(name, id);
         this.name = name;
         this.wallet = wallet;
+        maxPricePerFlight = new HashMap<Flight, Integer>();
+
     }
 }
