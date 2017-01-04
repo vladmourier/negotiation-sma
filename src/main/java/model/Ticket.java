@@ -59,4 +59,8 @@ public class Ticket {
     public void setDate(Date date) {
         this.date = date;
     }
+
+    public boolean compare(Ticket t) {
+        return this.getF().equals(t.getF()) && this.getDate().equals(t.getDate());
+    }
 }

@@ -13,12 +13,14 @@ public class Client extends Agent implements Runnable, MessageReceivedListener {
     HashMap<Flight, Integer> maxPricePerFlight;
     int wallet;
     AgentSocket agentSocket;
+    Ticket wantedTicket;
 
-    public Client(String name, int wallet, int id) {
+    public Client(String name, int wallet, Ticket wantedTicket, int id) {
         super(name, id);
         maxPricePerFlight = new HashMap<>();
         this.agentSocket = new AgentSocket(Id);
         this.wallet = wallet;
+        this.wantedTicket = wantedTicket;
         this.agentSocket.addMessageReceivedListener(this);
     }
 
@@ -37,20 +39,24 @@ public class Client extends Agent implements Runnable, MessageReceivedListener {
     }
 
     public void negotiate(Ticket t) {
-        if (getNbPropositions() <= 6) {
-            Double b;
-            if(t.getPrice()>maxPricePerFlight.get(t.getF())) {
-                b = maxPricePerFlight.get(t.getF())*0.8;
-                t.setPrice(b.intValue());
-                setNbPropositions(getNbPropositions()+1);
-                //propose
-            } else if (t.getPrice() <= maxPricePerFlight.get(t.getF())*0.25) {
-                //accept
+        if (t.compare(wantedTicket)) {
+            if (getNbPropositions() <= 6) {
+                Double b;
+                if (t.getPrice() > maxPricePerFlight.get(t.getF())) {
+                    b = maxPricePerFlight.get(t.getF()) * 0.8;
+                    t.setPrice(b.intValue());
+                    setNbPropositions(getNbPropositions() + 1);
+                    //propose
+                } else if (t.getPrice() <= maxPricePerFlight.get(t.getF()) * 0.25) {
+                    //accept
+                } else {
+                    b = t.getPrice() * 1.1;
+                    t.setPrice(b.intValue());
+                    setNbPropositions(getNbPropositions() + 1);
+                    //propose
+                }
             } else {
-                b = t.getPrice()*1.1;
-                t.setPrice(b.intValue());
-                setNbPropositions(getNbPropositions()+1);
-                //propose
+                // refuse
             }
         } else {
             // refuse
