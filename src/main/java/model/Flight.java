@@ -44,4 +44,12 @@ public class Flight {
         result = 31 * result + (to != null ? to.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "Flight{" +
+                "from=" + from +
+                ", to=" + to +
+                '}';
+    }
 }

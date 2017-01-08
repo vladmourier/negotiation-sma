@@ -12,21 +12,24 @@ public class Ticket {
 
 
     int id;
-    Flight f;
+    Flight flight;
     int price;
     Date date;
 
     public Ticket(int id, Destination from, Destination to, int price, Date date) {
-        this.f = new Flight(from, to);
-
+        this.flight = new Flight(from, to);
+        this.id = id;
         this.price = price;
         this.date = date;
+        tickets.put(id, this);
     }
 
-    public Ticket(int id, Flight f, int price, Date date) {
-        this.f = f;
+    public Ticket(int id, Flight flight, int price, Date date) {
+        this.id = id;
+        this.flight = flight;
         this.price = price;
         this.date = date;
+        tickets.put(id, this);
     }
 
     public int getId() {
@@ -37,12 +40,12 @@ public class Ticket {
         this.id = id;
     }
 
-    public Flight getF() {
-        return f;
+    public Flight getFlight() {
+        return flight;
     }
 
-    public void setF(Flight f) {
-        this.f = f;
+    public void setFlight(Flight flight) {
+        this.flight = flight;
     }
 
     public int getPrice() {
@@ -59,5 +62,15 @@ public class Ticket {
 
     public void setDate(Date date) {
         this.date = date;
+    }
+
+    @Override
+    public String toString() {
+        return "Ticket{" +
+                "id=" + id +
+                ", flight=" + flight +
+                ", price=" + price +
+                ", date=" + date +
+                '}';
     }
 }
