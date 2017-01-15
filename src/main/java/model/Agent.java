@@ -1,9 +1,12 @@
 package model;
 
 import model.communication.AgentSocket;
+import model.communication.events.MessageReceivedEvent;
 import model.communication.events.MessageReceivedListener;
-import org.json.JSONObject;
+import model.communication.message.Action;
+import model.communication.message.Message;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -20,10 +23,15 @@ public abstract class Agent implements Runnable, MessageReceivedListener {
     String name;
     int Id;
     protected HashMap<Integer, Integer> nbPropositions;
+    protected HashMap<Agent, Ticket> lastBestOffer = new HashMap<>();
+    protected Double lowThreshold;
+    protected Double highThreshold;
     AgentSocket agentSocket;
 
-    public Agent(String name, int id) {
+    public Agent(String name, int id, double lowThreshold, double highThreshold) {
         this.name = name;
+        this.lowThreshold = lowThreshold;
+        this.highThreshold = highThreshold;
         Id = id;
         nbPropositions = new HashMap<>();
         agents.put(id, this);
@@ -35,6 +43,53 @@ public abstract class Agent implements Runnable, MessageReceivedListener {
             this.agentSocket.sendMessage(recipient, msg);
         }
     }
+
+    protected abstract boolean isBestOffer(Agent agent, Ticket ticket);
+
+    protected void setLastBestOffer(Agent agent, Ticket ticket) {
+        this.lastBestOffer.put(agent, ticket);
+    }
+
+    protected Ticket getLastBestOffer(Agent agent) {
+        return this.lastBestOffer.get(agent);
+    }
+
+    protected abstract boolean isCorrectDeal(Ticket ticket);
+
+    protected abstract boolean isGreatDeal(Ticket ticket);
+
+    protected abstract boolean isPoorDeal(Ticket ticket);
+
+    public void messageReceived(MessageReceivedEvent event) {
+        Message receivedMessage = event.getSource().getLastReceivedMessage();
+        boolean sendMessage = true;
+        Ticket proposedTicket = receivedMessage.getTicket();
+        Ticket nextTicket = new Ticket(proposedTicket.getId() + 1, proposedTicket.getFlight(), proposedTicket.getPrice(), proposedTicket.getDate());
+        Action nextAction = Action.ORDER;
+        System.out.println(receivedMessage);
+
+        if (receivedMessage.isWellFormed() && getNbPropositions(receivedMessage.getEmitter()) <= MAX_NB_PROPOSITIONS) {
+            ArrayList<Object> pack = treatMessageAccordingToAction(receivedMessage, nextAction, proposedTicket, nextTicket, sendMessage);
+            nextAction = (Action) pack.get(0);
+            nextTicket = (Ticket) pack.get(1);
+            sendMessage = (boolean) pack.get(2);
+            if (sendMessage) {
+                if (getNbPropositions(receivedMessage.getEmitter()) == MAX_NB_PROPOSITIONS && nextAction == Action.PROPOSE) {
+                    nextAction = Action.REFUSE;
+                }
+                Message nextMessage = new Message(receivedMessage.getMessageNumber() + 1, receivedMessage.getMessageNumber(),
+                        nextAction, this, receivedMessage.getEmitter(), nextTicket);
+                sendMessage(receivedMessage.getEmitter().getId(), nextMessage.toJSONString());
+                incrementNbPropositions(receivedMessage.getEmitter());
+            }
+        } else {
+            Message nextMessage = new Message(receivedMessage.getMessageNumber() + 1, receivedMessage.getMessageNumber(),
+                    Action.REFUSE, this, receivedMessage.getEmitter(), receivedMessage.getTicket());
+            sendMessage(receivedMessage.getEmitter().getId(), nextMessage.toJSONString());
+        }
+    }
+
+    protected abstract ArrayList<Object> treatMessageAccordingToAction(Message receivedMessage, Action nextAction, Ticket proposedTicket, Ticket nextTicket, Boolean sendMessage);
 
     public String getName() {
         return name;
@@ -56,11 +111,10 @@ public abstract class Agent implements Runnable, MessageReceivedListener {
     public String toString() {
         return "{" +
                 "name:'" + name + '\'' +
-                ", Id:" + Id +
                 '}';
     }
 
-    public int getNbPropositions(Agent agent) {
+    int getNbPropositions(Agent agent) {
         if (!nbPropositions.containsKey(agent.getId()))
             nbPropositions.put(agent.getId(), 0);
         return nbPropositions.get(agent.getId());
