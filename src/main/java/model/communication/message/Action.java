@@ -38,6 +38,7 @@ public enum Action {
         actions.add(PROPOSE);
         actions.add(ACCEPT);
         actions.add(REFUSE);
+        actions.add(ERROR);
         return actions;
     }
 }

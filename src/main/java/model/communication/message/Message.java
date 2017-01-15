@@ -1,10 +1,9 @@
 package model.communication.message;
 
 import model.Agent;
-import model.Destination;
-import model.Flight;
 import model.Ticket;
-import org.json.*;
+import org.json.JSONObject;
+import org.json.JSONString;
 
 /**
  * Created by Vlad on 03/01/2017.
