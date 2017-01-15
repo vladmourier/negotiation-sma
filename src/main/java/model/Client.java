@@ -24,12 +24,15 @@ public class Client extends Agent {
      * The total money of the client
      */
     int wallet;
+    Ticket wantedTicket;
+
 
     public Client(String name, int wallet, int id, double lowThreshold, double highThreshold) {
         super(name, id, lowThreshold, highThreshold);
         maxPricePerFlight = new HashMap<>();
         this.agentSocket = new AgentSocket(Id);
         this.wallet = wallet;
+        this.wantedTicket = wantedTicket;
         this.agentSocket.addMessageReceivedListener(this);
 
         maxPricePerFlight.put(new Flight(Destination.LYON, Destination.PARIS), 80);
@@ -77,6 +80,7 @@ public class Client extends Agent {
         pack.add(sendMessage);
         return pack;
     }
+
 
     public Action negotiate(Agent emitter, Ticket submittedTicket, Ticket nextTicket) {
         if (getNbPropositions(emitter) <= MAX_NB_PROPOSITIONS) {

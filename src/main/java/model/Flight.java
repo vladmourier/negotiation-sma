@@ -52,4 +52,24 @@ public class Flight {
                 ", to=" + to +
                 '}';
     }
+
+    public boolean equals(Flight f) {
+        return f.getFrom().equals(this.getFrom()) && f.getTo().equals(this.getTo());
+    }
+
+    public Destination getFrom() {
+        return from;
+    }
+
+    public void setFrom(Destination from) {
+        this.from = from;
+    }
+
+    public Destination getTo() {
+        return to;
+    }
+
+    public void setTo(Destination to) {
+        this.to = to;
+    }
 }
