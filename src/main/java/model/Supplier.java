@@ -11,8 +11,14 @@ import java.util.HashMap;
  * Created by Vlad on 03/01/2017.
  */
 public class Supplier extends Agent {
+    /**
+     * The minimum price the supplier is willing to earn per flight
+     */
     HashMap<Flight, Integer> minPricePerFlight;
     ArrayList<Ticket> offers;
+    /**
+     * Array of tickets sold by the seller to clients who accepted them
+     */
     ArrayList<Ticket> sales = new ArrayList<>();
 
 

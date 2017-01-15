@@ -12,8 +12,17 @@ import java.util.HashMap;
  * Represents a customer able to negociate with ticket Suppliers
  */
 public class Client extends Agent {
+    /**
+     * Contains the maximum prices the client is ready to pay for flights
+     */
     HashMap<Flight, Integer> maxPricePerFlight;
+    /**
+     * Array containing tickets accepted by both the buyer and the seller
+     */
     ArrayList<Ticket> boughtTickets = new ArrayList<>();
+    /**
+     * The total money of the client
+     */
     int wallet;
 
     public Client(String name, int wallet, int id, double lowThreshold, double highThreshold) {
