@@ -1,4 +1,4 @@
-package model;
+package model.travel;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -8,28 +8,46 @@ import java.util.HashMap;
  */
 public class Ticket {
 
+    private static int lastTicketNumber = -1;
     public static HashMap<Integer, Ticket> tickets = new HashMap<Integer, Ticket>();
 
-    int id;
-    Flight flight;
-    int price;
-    Date date;
+    private int id;
+    private Flight flight;
+    private int price;
+    private Date date;
 
-    public Ticket(int id, Destination from, Destination to, int price, Date date) {
-        this.flight = new Flight(from, to);
-        this.id = id;
+    public Ticket(UntrackedFlight flight, int price, Date date) {
+        this.flight = new Flight(flight);
+        this.id = lastTicketNumber +1;
         this.price = price;
         this.date = date;
         tickets.put(id, this);
+        lastTicketNumber++;
     }
 
-    public Ticket(int id, Flight flight, int price, Date date) {
-        this.id = id;
+    public Ticket(Flight flight, int price, Date date) {
+        this.id = lastTicketNumber+1;
         this.flight = flight;
         this.price = price;
         this.date = date;
         tickets.put(id, this);
+        lastTicketNumber++;
     }
+
+    public boolean compare(Ticket t) {
+        return this.getFlight().equals(t.getFlight()) && this.getDate().equals(t.getDate());
+    }
+  
+    @Override
+    public String toString() {
+        return "Ticket{" +
+                "id=" + id +
+                ", flight=" + flight +
+                ", price=" + price +
+                ", date=" + date +
+                '}';
+    }
+
 
     public int getId() {
         return id;
@@ -61,19 +79,5 @@ public class Ticket {
 
     public void setDate(Date date) {
         this.date = date;
-    }
-
-    public boolean compare(Ticket t) {
-        return this.getF().equals(t.getF()) && this.getDate().equals(t.getDate());
-    }
-  
-    @Override
-    public String toString() {
-        return "Ticket{" +
-                "id=" + id +
-                ", flight=" + flight +
-                ", price=" + price +
-                ", date=" + date +
-                '}';
     }
 }

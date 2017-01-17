@@ -1,4 +1,4 @@
-package model;
+package model.travel;
 
 /**
  * Created by Vlad on 03/01/2017.

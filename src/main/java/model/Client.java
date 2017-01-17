@@ -3,9 +3,13 @@ package model;
 import model.communication.AgentSocket;
 import model.communication.message.Action;
 import model.communication.message.Message;
+import model.negotiation.Negotiation;
+import model.travel.Destination;
+import model.travel.Flight;
+import model.travel.Ticket;
+import model.travel.UntrackedFlight;
 
 import java.util.ArrayList;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 
 /**
@@ -15,7 +19,7 @@ public class Client extends Agent {
     /**
      * Contains the maximum prices the client is ready to pay for flights
      */
-    HashMap<Flight, Integer> maxPricePerFlight;
+    HashMap<UntrackedFlight, Integer> maxPricePerFlight;
     /**
      * Array containing tickets accepted by both the buyer and the seller
      */
@@ -24,41 +28,52 @@ public class Client extends Agent {
      * The total money of the client
      */
     int wallet;
-    Ticket wantedTicket;
+    ArrayList<Ticket> wantedTickets = new ArrayList<>();
 
-
-    public Client(String name, int wallet, int id, double lowThreshold, double highThreshold) {
-        super(name, id, lowThreshold, highThreshold);
+    public Client(String name, int wallet, double lowThreshold, double highThreshold) {
+        super(name, lowThreshold, highThreshold);
         maxPricePerFlight = new HashMap<>();
         this.agentSocket = new AgentSocket(Id);
         this.wallet = wallet;
-        this.wantedTicket = wantedTicket;
         this.agentSocket.addMessageReceivedListener(this);
-
-        maxPricePerFlight.put(new Flight(Destination.LYON, Destination.PARIS), 80);
-        maxPricePerFlight.put(new Flight(Destination.PARIS, Destination.LYON), 80);
     }
 
-    public void run() {
-        for (Agent agent : Agent.agents.values()) {
-            if (agent.getClass() == Supplier.class) {
-                Ticket ticket = new Ticket(0, Destination.LYON, Destination.PARIS, 40, new GregorianCalendar(2017, GregorianCalendar.FEBRUARY, 5).getTime());
-                Message m = new Message(0, -1, Action.CALL, this, agent, ticket);
-                sendMessage(agent.getId(), m.toJSONString());
+    public void setMaxPricePerFlight(UntrackedFlight flight, int maxPrice){
+        maxPricePerFlight.put(flight, maxPrice);
+    }
+
+    public void purchase(){
+        for(Ticket wantedTicket : wantedTickets){
+            Negotiation n = new Negotiation(this, wantedTicket.getFlight());
+            for (Agent agent : Agent.agents.values()) {
+                currentNegotiation = n;
+                if (agent.getClass() == Supplier.class)
+                {
+                    n.addSupplier((Supplier) agent);
+                    n.setLastOfferedTicket(wantedTicket);
+                    Message m = new Message(-1, Action.CALL, this, agent, wantedTicket);
+                    sendMessage(agent.getId(), m);
+                }
             }
         }
     }
 
+    public boolean addWantedTicket(Ticket ticket){
+        if(wantedTickets == null) wantedTickets = new ArrayList<>();
+        return wantedTickets.add(ticket);
+    }
+
     protected ArrayList<Object> treatMessageAccordingToAction(Message receivedMessage, Action nextAction, Ticket proposedTicket, Ticket nextTicket, Boolean sendMessage) {
         ArrayList<Object> pack = new ArrayList<>();
+        Agent emitter = receivedMessage.getEmitter();
         switch (receivedMessage.getAction()) {
             case PROPOSE:
-                nextAction = negotiate(receivedMessage.getEmitter(), proposedTicket, nextTicket);
-                if (isBestOffer(receivedMessage.getEmitter(), proposedTicket)) {
-                    setLastBestOffer(receivedMessage.getEmitter(), proposedTicket);
+                nextAction = negotiate(emitter, proposedTicket, nextTicket);
+                if (isBestOffer(emitter, proposedTicket)) {
+                    setLastBestOffer(emitter, proposedTicket);
                 } else {
-                    if (getNbPropositions(receivedMessage.getEmitter()) >= 2 * MAX_NB_PROPOSITIONS / 3) {
-                        Double nextPrice = getLastBestOffer(receivedMessage.getEmitter()).getPrice() * 0.8;
+                    if (currentNegotiation.getNbPropositions(emitter) >= 2 * Negotiation.MAX_NB_PROPOSITIONS / 3) {
+                        Double nextPrice = getLastBestOffer(emitter).getPrice() * 0.8;
                         nextTicket.setPrice(nextPrice.intValue());
                     }
                 }
@@ -66,9 +81,12 @@ public class Client extends Agent {
             case ACCEPT:
                 sendMessage = false;
                 boughtTickets.add(proposedTicket);
+                currentNegotiation.endNegotiation();
+                System.out.println(ANSI_BLUE + "Ticket bought" + ANSI_RESET);
                 break;
             case REFUSE:
                 sendMessage = false;
+                currentNegotiation.removeSupplier((Supplier) emitter);
                 break;
             case CALL:
             case ORDER:
@@ -83,25 +101,33 @@ public class Client extends Agent {
 
 
     public Action negotiate(Agent emitter, Ticket submittedTicket, Ticket nextTicket) {
-        if (getNbPropositions(emitter) <= MAX_NB_PROPOSITIONS) {
+        if (currentNegotiation.isNotDoneYetWithAgent(emitter)) {
             Double b;
-            if (isGreatDeal(submittedTicket)) {
+            if (isGreatDeal(submittedTicket) || isAcceptableDeal(emitter, submittedTicket)) {
                 //accept
+                System.out.println(ANSI_BLUE + "Ticket bought" + ANSI_RESET);
                 return Action.ACCEPT;
             } else if (isCorrectDeal(submittedTicket)) {
                 b = submittedTicket.getPrice() * 0.8;
                 nextTicket.setPrice(b.intValue());
                 return Action.ORDER;
             } else if (isPoorDeal(submittedTicket)) {
-                nextTicket.setPrice(maxPricePerFlight.get(submittedTicket.getFlight()));
+                nextTicket.setPrice(maxPricePerFlight.get(submittedTicket.getFlight().getUntrackedFlight()));
+                maxPricePerFlight.put(submittedTicket.getFlight().getUntrackedFlight(), ((int) (nextTicket.getPrice() * highThreshold)));
                 return Action.ORDER;
             } else {
+                currentNegotiation.removeSupplier((Supplier)emitter);
                 return Action.REFUSE;
             }
         } else {
             // refuse
             return Action.REFUSE;
         }
+    }
+
+    private boolean isAcceptableDeal(Agent emitter, Ticket submittedTicket){
+        return (currentNegotiation.getNbPropositions(emitter) >= Negotiation.MAX_NB_PROPOSITIONS - 1 &&
+                (submittedTicket.getPrice() / maxPricePerFlight.get(submittedTicket.getFlight().getUntrackedFlight())) > (4 * lowThreshold / 5));
     }
 
     @Override
@@ -112,21 +138,32 @@ public class Client extends Agent {
     @Override
     protected boolean isCorrectDeal(Ticket ticket) {
         int ticketPrice = ticket.getPrice();
-        int maxPriceforTicket = maxPricePerFlight.get(ticket.getFlight());
+        int maxPriceforTicket = maxPricePerFlight.get(ticket.getFlight().getUntrackedFlight());
         return ((double) ticketPrice) / maxPriceforTicket >= lowThreshold && ((double) ticketPrice) / maxPriceforTicket <= highThreshold;
     }
 
     @Override
     protected boolean isGreatDeal(Ticket ticket) {
         int ticketPrice = ticket.getPrice();
-        int maxPriceforTicket = maxPricePerFlight.get(ticket.getFlight());
+        int maxPriceforTicket = maxPricePerFlight.get(ticket.getFlight().getUntrackedFlight());
         return ((double) ticketPrice) / maxPriceforTicket < lowThreshold;
     }
 
     @Override
     protected boolean isPoorDeal(Ticket ticket) {
         int ticketPrice = ticket.getPrice();
-        int maxPriceforTicket = maxPricePerFlight.get(ticket.getFlight());
+        int maxPriceforTicket = maxPricePerFlight.get(ticket.getFlight().getUntrackedFlight());
         return ((double) ticketPrice) / maxPriceforTicket > highThreshold;
+    }
+
+    @Override
+    protected boolean specialChecks(Message message) {
+        //Makes sure the client can afford the ticket
+        return currentNegotiation.getNbPropositions(message.getEmitter()) <= Negotiation.MAX_NB_PROPOSITIONS - 2 || currentNegotiation.getLastOfferedTicket().getPrice() <= wallet;
+    }
+
+    @Override
+    public void run() {
+        purchase();
     }
 }
