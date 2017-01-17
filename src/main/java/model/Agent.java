@@ -8,8 +8,7 @@ import model.communication.message.Message;
 import model.negotiation.Negotiation;
 import model.travel.Ticket;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * Represents the common attributes/behavior to
@@ -269,5 +268,31 @@ public abstract class Agent implements Runnable, MessageReceivedListener {
         return "{" +
                 "name:'" + name + '\'' +
                 '}';
+    }
+
+    public int getDays(GregorianCalendar g1, GregorianCalendar g2) {
+        int elapsed = 0;
+        GregorianCalendar gc1, gc2;
+        if (g2.after(g1)) {
+            gc2 = (GregorianCalendar) g2.clone();
+            gc1 = (GregorianCalendar) g1.clone();
+        }
+        else   {
+            gc2 = (GregorianCalendar) g1.clone();
+            gc1 = (GregorianCalendar) g2.clone();
+        }
+        gc1.clear(Calendar.MILLISECOND);
+        gc1.clear(Calendar.SECOND);
+        gc1.clear(Calendar.MINUTE);
+        gc1.clear(Calendar.HOUR_OF_DAY);
+        gc2.clear(Calendar.MILLISECOND);
+        gc2.clear(Calendar.SECOND);
+        gc2.clear(Calendar.MINUTE);
+        gc2.clear(Calendar.HOUR_OF_DAY);
+        while ( gc1.before(gc2) ) {
+            gc1.add(Calendar.DATE, 1);
+            elapsed++;
+        }
+        return elapsed;
     }
 }

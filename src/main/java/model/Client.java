@@ -10,6 +10,7 @@ import model.travel.Ticket;
 import model.travel.UntrackedFlight;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 
 /**
@@ -29,13 +30,15 @@ public class Client extends Agent {
      */
     int wallet;
     ArrayList<Ticket> wantedTickets = new ArrayList<>();
+    int dateFlexibility;
 
-    public Client(String name, int wallet, double lowThreshold, double highThreshold) {
+    public Client(String name, int wallet, double lowThreshold, double highThreshold, int dateFlexibility) {
         super(name, lowThreshold, highThreshold);
         maxPricePerFlight = new HashMap<>();
         this.agentSocket = new AgentSocket(Id);
         this.wallet = wallet;
         this.agentSocket.addMessageReceivedListener(this);
+        this.dateFlexibility = dateFlexibility;
     }
 
     public void setMaxPricePerFlight(UntrackedFlight flight, int maxPrice){
@@ -103,9 +106,13 @@ public class Client extends Agent {
     public Action negotiate(Agent emitter, Ticket submittedTicket, Ticket nextTicket) {
         if (currentNegotiation.isNotDoneYetWithAgent(emitter)) {
             Double b;
+            if(!checkSubmittedTicketDates(submittedTicket)) {
+                return Action.REFUSE;
+            }
             if (isGreatDeal(submittedTicket) || isAcceptableDeal(emitter, submittedTicket)) {
                 //accept
                 System.out.println(ANSI_BLUE + "Ticket bought" + ANSI_RESET);
+                System.out.println(new Date(99, 2, 17).compareTo(new Date(99,2,18)));
                 return Action.ACCEPT;
             } else if (isCorrectDeal(submittedTicket)) {
                 b = submittedTicket.getPrice() * 0.8;
@@ -123,6 +130,15 @@ public class Client extends Agent {
             // refuse
             return Action.REFUSE;
         }
+    }
+
+    private boolean checkSubmittedTicketDates(Ticket submittedTicket) {
+        for (Ticket t : wantedTickets) {
+            if(getDays(t.getDate(), submittedTicket.getDate()) <= dateFlexibility && t.getFlight().equals(submittedTicket.getFlight())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isAcceptableDeal(Agent emitter, Ticket submittedTicket){

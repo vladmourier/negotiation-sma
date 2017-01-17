@@ -1,6 +1,6 @@
 package model.travel;
 
-import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 
 /**
@@ -14,9 +14,9 @@ public class Ticket {
     private int id;
     private Flight flight;
     private int price;
-    private Date date;
+    private GregorianCalendar date;
 
-    public Ticket(UntrackedFlight flight, int price, Date date) {
+    public Ticket(UntrackedFlight flight, int price, GregorianCalendar date) {
         this.flight = new Flight(flight);
         this.id = lastTicketNumber +1;
         this.price = price;
@@ -25,7 +25,7 @@ public class Ticket {
         lastTicketNumber++;
     }
 
-    public Ticket(Flight flight, int price, Date date) {
+    public Ticket(Flight flight, int price, GregorianCalendar date) {
         this.id = lastTicketNumber+1;
         this.flight = flight;
         this.price = price;
@@ -73,11 +73,11 @@ public class Ticket {
         this.price = price;
     }
 
-    public Date getDate() {
+    public GregorianCalendar getDate() {
         return date;
     }
 
-    public void setDate(Date date) {
+    public void setDate(GregorianCalendar date) {
         this.date = date;
     }
 }

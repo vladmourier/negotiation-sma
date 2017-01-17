@@ -14,17 +14,17 @@ public class Main {
         UntrackedFlight f1 = new UntrackedFlight(Destination.LYON, Destination.PARIS);
 
 
-        Client c = new Client("BUYER", 100, 0.9, 1.2);
-        c.addWantedTicket(new Ticket(f1, 80, new GregorianCalendar(2017, GregorianCalendar.FEBRUARY, 5).getTime()));
+        Client c = new Client("BUYER", 100, 0.9, 1.2, 0);
+        c.addWantedTicket(new Ticket(f1, 80, new GregorianCalendar(2017, GregorianCalendar.FEBRUARY, 5)));
         c.setMaxPricePerFlight(f1, 80);
-        c.addWantedTicket(new Ticket(f1, 90, new GregorianCalendar(2018, GregorianCalendar.FEBRUARY, 5).getTime()));
+        c.addWantedTicket(new Ticket(f1, 90, new GregorianCalendar(2018, GregorianCalendar.FEBRUARY, 5)));
 
 
-        Client c2 = new Client("TRADER", 1000, 0.9, 1.2);
+        Client c2 = new Client("TRADER", 1000, 0.9, 1.2, 0);
         c2.setMaxPricePerFlight(f1, 70);
-        c2.addWantedTicket(new Ticket(f1, 200, new GregorianCalendar(2017, GregorianCalendar.FEBRUARY, 5).getTime()));
+        c2.addWantedTicket(new Ticket(f1, 200, new GregorianCalendar(2017, GregorianCalendar.FEBRUARY, 5)));
         for (int i = 0; i < 4; i++)
-            c2.addWantedTicket(new Ticket(f1, new Random().nextInt(50)+50, new GregorianCalendar(2018, GregorianCalendar.FEBRUARY, 5).getTime()));
+            c2.addWantedTicket(new Ticket(f1, new Random().nextInt(50)+50, new GregorianCalendar(2018, GregorianCalendar.FEBRUARY, 5)));
 
 
         Supplier s = new Supplier("SELLER", 0.9, 1.5);
