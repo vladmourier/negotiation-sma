@@ -3,6 +3,11 @@ package model;
 import model.communication.AgentSocket;
 import model.communication.message.Action;
 import model.communication.message.Message;
+import model.negotiation.Negotiation;
+import model.travel.Destination;
+import model.travel.Flight;
+import model.travel.Ticket;
+import model.travel.UntrackedFlight;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,22 +19,25 @@ public class Supplier extends Agent {
     /**
      * The minimum price the supplier is willing to earn per flight
      */
-    HashMap<Flight, Integer> minPricePerFlight;
-    ArrayList<Ticket> offers;
+    HashMap<UntrackedFlight, Integer> minPricePerFlight;
+    HashMap<UntrackedFlight, Integer> availableFlights = new HashMap<>();
     /**
      * Array of tickets sold by the seller to clients who accepted them
      */
     ArrayList<Ticket> sales = new ArrayList<>();
 
 
-    public Supplier(String name, int id, double lowThreshold, double highThreshold) {
-        super(name, id, lowThreshold, highThreshold);
+    public Supplier(String name, double lowThreshold, double highThreshold) {
+        super(name, lowThreshold, highThreshold);
 
         minPricePerFlight = new HashMap<>();
-        minPricePerFlight.put(new Flight(Destination.PARIS, Destination.LYON), 100);
-        minPricePerFlight.put(new Flight(Destination.LYON, Destination.PARIS), 200);
         this.agentSocket = new AgentSocket(Id);
         this.agentSocket.addMessageReceivedListener(this);
+    }
+
+    public void addAvailableFlight(UntrackedFlight flight,int quantity, int minPricePerFlight){
+        availableFlights.put(flight, quantity);
+        this.minPricePerFlight.put(flight, minPricePerFlight);
     }
 
     @Override
@@ -40,57 +48,60 @@ public class Supplier extends Agent {
     @Override
     protected boolean isCorrectDeal(Ticket ticket) {
         int ticketPrice = ticket.getPrice();
-        int minPriceForTicket = minPricePerFlight.get(ticket.getFlight());
+        int minPriceForTicket = minPricePerFlight.get(ticket.getFlight().getUntrackedFlight());
         return ((double) ticketPrice) / minPriceForTicket >= lowThreshold && ((double) ticketPrice) / minPriceForTicket <= highThreshold;
     }
 
     @Override
     protected boolean isPoorDeal(Ticket ticket) {
         int ticketPrice = ticket.getPrice();
-        int minPriceForTicket = minPricePerFlight.get(ticket.getFlight());
+        int minPriceForTicket = minPricePerFlight.get(ticket.getFlight().getUntrackedFlight());
         return ((double) ticketPrice) / minPriceForTicket < lowThreshold;
+    }
+
+    @Override
+    protected boolean specialChecks(Message message) {
+        Integer amount = availableFlights.get(currentNegotiation.getFlight().getUntrackedFlight());
+        return amount != null && amount>0;
     }
 
     @Override
     protected boolean isGreatDeal(Ticket ticket) {
         int ticketPrice = ticket.getPrice();
-        int minPriceForTicket = minPricePerFlight.get(ticket.getFlight());
+        int minPriceForTicket = minPricePerFlight.get(ticket.getFlight().getUntrackedFlight());
         return ((double) ticketPrice) / minPriceForTicket > highThreshold;
-    }
-
-    public void run() {
-        //Nothing to do here since suppliers are not launched as separate threads
     }
 
     @Override
     protected ArrayList<Object> treatMessageAccordingToAction(Message receivedMessage, Action nextAction, Ticket proposedTicket, Ticket nextTicket, Boolean sendMessage) {
         ArrayList<Object> pack = new ArrayList<>();
+        Agent emitter = receivedMessage.getEmitter();
         switch (receivedMessage.getAction()) {
             case CALL:
-                //Todo : offer ticket
-                nextAction = Action.PROPOSE;
             case ORDER:
-                //Todo : negotiate new ticket
-                nextAction = negotiate(receivedMessage.getEmitter(), proposedTicket, nextTicket);
-                if (isBestOffer(receivedMessage.getEmitter(), proposedTicket)) {
-                    setLastBestOffer(receivedMessage.getEmitter(), proposedTicket);
+                nextAction = negotiate(emitter, proposedTicket, nextTicket);
+                if (isBestOffer(emitter, proposedTicket)) {
+                    setLastBestOffer(emitter, proposedTicket);
                 } else {
-                    if (getNbPropositions(receivedMessage.getEmitter()) >= 2 * MAX_NB_PROPOSITIONS / 3) {
-                        Double nextPrice = getLastBestOffer(receivedMessage.getEmitter()).getPrice() * 1.3;
+                    if (currentNegotiation.getNbPropositions(emitter) >= 2 * Negotiation.MAX_NB_PROPOSITIONS / 3) {
+                        Double nextPrice = getLastBestOffer(emitter).getPrice() * highThreshold;
                         nextTicket.setPrice(nextPrice.intValue());
                     }
                 }
                 break;
             case PROPOSE:
-                // TOdo : should not happen unless suppliers are clients too
+                //Should not happen unless suppliers are clients too
+                nextAction = Action.ERROR;
                 break;
             case ACCEPT:
-                //Todo : Sell ticket
+                //Sell ticket
                 sales.add(proposedTicket);
                 nextAction = Action.ACCEPT;
+                currentNegotiation.endNegotiation();
                 break;
             case REFUSE:
-                //Todo : end communication
+                //end communication
+                sendMessage = false;
                 break;
         }
         pack.add(nextAction);
@@ -100,19 +111,20 @@ public class Supplier extends Agent {
     }
 
     public Action negotiate(Agent emitter, Ticket orderedTicket, Ticket nextTicket) {
-        if (getNbPropositions(emitter) <= MAX_NB_PROPOSITIONS) {
+        if (currentNegotiation.isNotDoneYetWithAgent(emitter)) {
             Double negotiatedPrice;
             if (isGreatDeal(orderedTicket)) {
                 // accept
                 return Action.ACCEPT;
             } else if (isCorrectDeal(orderedTicket)) {
-                negotiatedPrice = minPricePerFlight.get(orderedTicket.getFlight()) -
-                        (0.3 - ((double) orderedTicket.getPrice() / minPricePerFlight.get(orderedTicket.getFlight()))) * minPricePerFlight.get(orderedTicket.getFlight());
+                negotiatedPrice = minPricePerFlight.get(orderedTicket.getFlight().getUntrackedFlight()) -
+                        (0.3 - ((double) orderedTicket.getPrice() / minPricePerFlight.get(orderedTicket.getFlight().getUntrackedFlight()))) * minPricePerFlight.get(orderedTicket.getFlight().getUntrackedFlight());
                 nextTicket.setPrice(negotiatedPrice.intValue());
                 return Action.PROPOSE;
                 // propose
             } else if (isPoorDeal(orderedTicket)) {
-                nextTicket.setPrice(minPricePerFlight.get(orderedTicket.getFlight()));
+                nextTicket.setPrice(minPricePerFlight.get(orderedTicket.getFlight().getUntrackedFlight()));
+                minPricePerFlight.put(orderedTicket.getFlight().getUntrackedFlight(), ((int)(nextTicket.getPrice() * lowThreshold)));
                 return Action.PROPOSE;
                 // propose
             } else {
@@ -122,5 +134,10 @@ public class Supplier extends Agent {
             // refuse
             return Action.REFUSE;
         }
+    }
+
+    @Override
+    public void run() {
+        //Empty body since suppliers are not launched as separate threads
     }
 }

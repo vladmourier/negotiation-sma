@@ -1,7 +1,7 @@
 package model.communication.message;
 
 import model.Agent;
-import model.Ticket;
+import model.travel.Ticket;
 import org.json.JSONObject;
 import org.json.JSONString;
 
@@ -10,30 +10,32 @@ import org.json.JSONString;
  */
 public class Message implements JSONString {
 
+    static int lastMessageNumber = -1;
+
     /**
      * Current message's number
      */
-    int messageNumber;
+    private int messageNumber;
     /**
      * Message number this is a response to. -1 if this is the initial message
      */
-    int previousMessageNumber;
+    private int previousMessageNumber;
     /**
      * Action : protocol word regarding tickets negotiation
      */
-    Action action;
+    private Action action;
     /**
      * The Agent sending the message
      */
-    Agent emitter;
+    private Agent emitter;
     /**
      * The Recipient of the message
      */
-    Agent recipient;
+    private Agent recipient;
     /**
      * The offered or asked ticket
      */
-    Ticket ticket;
+    private Ticket ticket;
 
 
     /**
@@ -54,20 +56,20 @@ public class Message implements JSONString {
     /**
      * Creates a message
      *
-     * @param messageNumber
      * @param previousMessageNumber
      * @param action
      * @param emitter
      * @param recipient
      * @param ticket
      */
-    public Message(int messageNumber, int previousMessageNumber, Action action, Agent emitter, Agent recipient, Ticket ticket) {
-        this.messageNumber = messageNumber;
+    public Message(int previousMessageNumber, Action action, Agent emitter, Agent recipient, Ticket ticket) {
+        this.messageNumber = lastMessageNumber+1;
         this.previousMessageNumber = previousMessageNumber;
         this.action = action;
         this.emitter = emitter;
         this.recipient = recipient;
         this.ticket = ticket;
+        lastMessageNumber++;
     }
 
     /**
@@ -86,6 +88,10 @@ public class Message implements JSONString {
                 '}';
     }
 
+    /**
+     * Returns true if the message has a correct syntax
+     * @return whether the message syntax is correct or not
+     */
     public boolean isWellFormed() {
         boolean isWellFormed = Action.getAll().contains(action);
         isWellFormed = isWellFormed && (messageNumber >= 0);
