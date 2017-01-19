@@ -47,6 +47,8 @@ public abstract class Agent implements Runnable, MessageReceivedListener {
     protected ArrayList<Negotiation> negotiations = new ArrayList<>();
     ArrayList<Agent> blackListedAgents = new ArrayList<>();
 
+    ArrayList<Message> waitingMessages = new ArrayList<>();
+
     protected Double lowThreshold;
     protected Double highThreshold;
     Negotiation currentNegotiation;
@@ -81,8 +83,9 @@ public abstract class Agent implements Runnable, MessageReceivedListener {
      * @param msg
      */
     public void sendMessage(int recipient, Message msg) {
-        if (recipient != this.getId() && agents.containsKey(recipient)) {
-            this.agentSocket.sendMessage(recipient, msg.toJSONString());
+        if (recipient != this.getId() && agents.containsKey(recipient) && msg != null) {
+            this.agentSocket.sendMessage(recipient,
+                    msg.toJSONString());
             currentNegotiation.setLastOfferedTicket(msg.getTicket());
         }
     }
@@ -161,6 +164,7 @@ public abstract class Agent implements Runnable, MessageReceivedListener {
      */
     public void messageReceived(MessageReceivedEvent event) {
         Message receivedMessage = event.getSource().getLastReceivedMessage();
+        Message nextMessage = null;
         boolean sendMessage = true;
         Agent emitter = receivedMessage.getEmitter();
         Ticket proposedTicket = receivedMessage.getTicket();
@@ -181,20 +185,28 @@ public abstract class Agent implements Runnable, MessageReceivedListener {
                 if (currentNegotiation.isDoneWithAgent(emitter) && nextAction == Action.PROPOSE) {
                     nextAction = Action.REFUSE;
                 }
-                Message nextMessage = new Message(receivedMessage.getMessageNumber(),
+                nextMessage = new Message(receivedMessage.getMessageNumber(),
                         nextAction, this, emitter, nextTicket);
-                sendMessage(emitter.getId(), nextMessage);
                 currentNegotiation.incrementNbPropositions(emitter);
             }
         } else {
             if (shouldRefuse(receivedMessage.getAction())) {
-                Message nextMessage = new Message(receivedMessage.getMessageNumber(),
+                nextMessage = new Message(receivedMessage.getMessageNumber(),
                         Action.REFUSE, this, emitter, receivedMessage.getTicket());
-                sendMessage(emitter.getId(), nextMessage);
-
             }
         }
+
+        ///////////////////// Check if negotiation with others can lead to accepting a better offer
+        processNextMessage(nextMessage);
     }
+
+    protected void processNextMessage(Message nextMessage){
+        if(nextMessage != null){
+            sendMessage(nextMessage.getRecipient().getId(), nextMessage);
+        }
+    }
+
+    protected abstract Message getBestMessage(Message message1, Message message2);
 
     /**
      * Returns true if the Agent must send a REFUSE message
@@ -276,8 +288,7 @@ public abstract class Agent implements Runnable, MessageReceivedListener {
         if (g2.after(g1)) {
             gc2 = (GregorianCalendar) g2.clone();
             gc1 = (GregorianCalendar) g1.clone();
-        }
-        else   {
+        } else {
             gc2 = (GregorianCalendar) g1.clone();
             gc1 = (GregorianCalendar) g2.clone();
         }
@@ -289,10 +300,12 @@ public abstract class Agent implements Runnable, MessageReceivedListener {
         gc2.clear(Calendar.SECOND);
         gc2.clear(Calendar.MINUTE);
         gc2.clear(Calendar.HOUR_OF_DAY);
-        while ( gc1.before(gc2) ) {
+        while (gc1.before(gc2)) {
             gc1.add(Calendar.DATE, 1);
             elapsed++;
         }
         return elapsed;
     }
+
+    public abstract int getMaxNbPropositionsFactor();
 }

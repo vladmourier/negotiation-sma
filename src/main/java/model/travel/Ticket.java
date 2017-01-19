@@ -1,5 +1,7 @@
 package model.travel;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 
@@ -40,11 +42,12 @@ public class Ticket {
   
     @Override
     public String toString() {
+        DateFormat df = new SimpleDateFormat();
         return "Ticket{" +
                 "id=" + id +
                 ", flight=" + flight +
                 ", price=" + price +
-                ", date=" + date +
+                ", date=" + df.format(date.getTime()) +
                 '}';
     }
 
