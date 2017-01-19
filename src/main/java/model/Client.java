@@ -4,13 +4,10 @@ import model.communication.AgentSocket;
 import model.communication.message.Action;
 import model.communication.message.Message;
 import model.negotiation.Negotiation;
-import model.travel.Destination;
-import model.travel.Flight;
 import model.travel.Ticket;
 import model.travel.UntrackedFlight;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 
 /**
@@ -75,17 +72,17 @@ public class Client extends Agent {
                 if (isBestOffer(emitter, proposedTicket)) {
                     setLastBestOffer(emitter, proposedTicket);
                 } else {
-                    if (currentNegotiation.getNbPropositions(emitter) >= 2 * Negotiation.MAX_NB_PROPOSITIONS / 3) {
+                    if (currentNegotiation.getNbPropositions(emitter) >= 2 * currentNegotiation.getMaxNbPropositions(emitter) / 3) {
                         Double nextPrice = getLastBestOffer(emitter).getPrice() * 0.8;
                         nextTicket.setPrice(nextPrice.intValue());
                     }
                 }
                 break;
             case ACCEPT:
-                sendMessage = false;
-                boughtTickets.add(proposedTicket);
-                currentNegotiation.endNegotiation();
-                System.out.println(ANSI_BLUE + "Ticket bought" + ANSI_RESET);
+                sendMessage = true;
+                if(!waitingMessages.isEmpty()){
+                    sendBestMessage();
+                }
                 break;
             case REFUSE:
                 sendMessage = false;
@@ -102,6 +99,11 @@ public class Client extends Agent {
         return pack;
     }
 
+    @Override
+    public int getMaxNbPropositionsFactor() {
+        return 1;
+    }
+
 
     public Action negotiate(Agent emitter, Ticket submittedTicket, Ticket nextTicket) {
         if (currentNegotiation.isNotDoneYetWithAgent(emitter)) {
@@ -111,8 +113,6 @@ public class Client extends Agent {
             }
             if (isGreatDeal(submittedTicket) || isAcceptableDeal(emitter, submittedTicket)) {
                 //accept
-                System.out.println(ANSI_BLUE + "Ticket bought" + ANSI_RESET);
-                System.out.println(new Date(99, 2, 17).compareTo(new Date(99,2,18)));
                 return Action.ACCEPT;
             } else if (isCorrectDeal(submittedTicket)) {
                 b = submittedTicket.getPrice() * 0.8;
@@ -142,7 +142,7 @@ public class Client extends Agent {
     }
 
     private boolean isAcceptableDeal(Agent emitter, Ticket submittedTicket){
-        return (currentNegotiation.getNbPropositions(emitter) >= Negotiation.MAX_NB_PROPOSITIONS - 1 &&
+        return (currentNegotiation.getNbPropositions(emitter) >= currentNegotiation.getMaxNbPropositions(emitter) - 1 &&
                 (submittedTicket.getPrice() / maxPricePerFlight.get(submittedTicket.getFlight().getUntrackedFlight())) > (4 * lowThreshold / 5));
     }
 
@@ -175,9 +175,53 @@ public class Client extends Agent {
     @Override
     protected boolean specialChecks(Message message) {
         //Makes sure the client can afford the ticket
-        return currentNegotiation.getNbPropositions(message.getEmitter()) <= Negotiation.MAX_NB_PROPOSITIONS - 2 || currentNegotiation.getLastOfferedTicket().getPrice() <= wallet;
+        return currentNegotiation.getNbPropositions(message.getEmitter()) <= currentNegotiation.getMaxNbPropositions(message.getEmitter()) - 2 || currentNegotiation.getLastOfferedTicket().getPrice() <= wallet;
     }
 
+    @Override
+    protected Message getBestMessage(Message message1, Message message2) {
+        if(message1 == null && message2 != null)
+            return message2;
+        else if(message1 != null && message2 == null)
+            return message1;
+        else {
+            int p1 = message1.getTicket().getPrice();
+            int p2 = message2.getTicket().getPrice();
+
+            return p1 == Math.min(p1, p2) ? message1 : message2;
+        }
+    }
+
+
+    @Override
+    protected void processNextMessage(Message nextMessage) {
+        if (nextMessage != null) {
+            if (nextMessage.getAction().equals(Action.ACCEPT)) {
+                waitingMessages.add(nextMessage);
+                System.out.println("SHOULD ACCEPT : " + nextMessage);
+            } else {
+                if(currentNegotiation.isDone()) nextMessage.setAction(Action.REFUSE);//Si la négo est finie, refuser en bloc
+                sendMessage(nextMessage.getRecipient().getId(), nextMessage);
+                if (currentNegotiation.exchangesAreOver()) {
+                    sendBestMessage();
+                }
+            }
+        }
+    }
+
+    public void sendBestMessage() {
+        Message bestMessage = null;
+        for (Message message : waitingMessages) {
+            bestMessage = getBestMessage(bestMessage, message);
+        }
+        if (bestMessage != null) {
+            System.out.println(ANSI_BLUE + "Ticket bought" + ANSI_RESET);
+            currentNegotiation.setLastOfferedTicket(bestMessage.getTicket());
+            boughtTickets.add(bestMessage.getTicket());
+            currentNegotiation.endNegotiation();
+            sendMessage(bestMessage.getRecipient().getId(), bestMessage);
+        }
+    }
     @Override
     public void run() {
         purchase();

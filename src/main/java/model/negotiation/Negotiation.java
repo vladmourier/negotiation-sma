@@ -2,20 +2,18 @@ package model.negotiation;
 
 import model.Agent;
 import model.Client;
-import model.travel.Flight;
 import model.Supplier;
+import model.travel.Flight;
 import model.travel.Ticket;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * Created by Vlad on 17/01/2017.
  */
 public class Negotiation {
 
-    static ArrayList<Negotiation> negotiations = new ArrayList<>();
+    static List<Negotiation> negotiations = Collections.synchronizedList(new ArrayList<Negotiation>());
     /**
      * Max number of studied propositions per negotiation dialogue (ie max number of message per agent per dialogue)
      */
@@ -66,6 +64,8 @@ public class Negotiation {
      */
     public long endNegotiation() {
         dateEnd = new Date();
+
+        System.out.println(Agent.ANSI_RED + "FIN DE LA NEGOCIATION" + "\r\nBilan :\r\n" + Agent.ANSI_RESET + this + "\r\n" + Agent.ANSI_RED + "/Bilan" + Agent.ANSI_RESET);
         return getNegotiationDuration();
     }
 
@@ -74,16 +74,13 @@ public class Negotiation {
     }
 
     public static Negotiation createOrFindNegotiation(Client origin, Flight flight) {
-        int i = 0;
         for(Negotiation n : negotiations){
-            if(n == null) return createOrFindNegotiation(origin, flight);//Empêche NullPointerException
-            i++;
+            if(n == null) break;//Empêche NullPointerException
             if(n.origin.equals(origin) && n.flight.equals(flight))
                 return n;
         }
         return new Negotiation(origin,flight);
     }
-
 
     /**
      * Returns true if the negotiation is done (ie the client or a supplier accepted a ticket)
@@ -99,7 +96,7 @@ public class Negotiation {
      * @return
      */
     public boolean isDoneWithAgent(Agent agent){
-        return getNbPropositions(agent) >= MAX_NB_PROPOSITIONS;
+        return getNbPropositions(agent) >= getMaxNbPropositions(agent);
     }
 
     /**
@@ -108,9 +105,13 @@ public class Negotiation {
      * @return
      */
     public boolean isNotDoneYetWithAgent(Agent agent){
-        return getNbPropositions(agent) <= MAX_NB_PROPOSITIONS;
+        return getNbPropositions(agent) <= getMaxNbPropositions(agent);
     }
 
+
+    public int getMaxNbPropositions(Agent agent){
+        return MAX_NB_PROPOSITIONS + ((suppliers.size()-1)*agent.getMaxNbPropositionsFactor()*MAX_NB_PROPOSITIONS);
+    }
 
     /////////////////////////////////////////////////////////////////////
     // Getters & Setters
@@ -164,7 +165,28 @@ public class Negotiation {
         return this.suppliers.add(s);
     }
 
+    public boolean exchangesAreOver(){
+        for(Supplier s : suppliers){
+            if(getNbPropositions(s) <= getMaxNbPropositions(s)){
+                return false;
+            }
+        }
+        return true;
+    }
     public boolean removeSupplier(Supplier s){
         return suppliers.remove(s);
+    }
+
+    @Override
+    public String toString() {
+        return "Negotiation{" + "\r\n" +
+                "nbPropositions=" + nbPropositions + "\r\n" +
+                ", origin=" + origin + "\r\n" +
+                ", suppliers=" + suppliers + "\r\n" +
+                ", flight=" + flight + "\r\n" +
+                ", dateStart=" + dateStart + "\r\n" +
+                ", dateEnd=" + dateEnd + "\r\n" +
+                ", lastOfferedTicket=" + lastOfferedTicket + "\r\n" +
+                '}';
     }
 }
