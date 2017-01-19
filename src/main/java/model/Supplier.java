@@ -3,9 +3,6 @@ package model;
 import model.communication.AgentSocket;
 import model.communication.message.Action;
 import model.communication.message.Message;
-import model.negotiation.Negotiation;
-import model.travel.Destination;
-import model.travel.Flight;
 import model.travel.Ticket;
 import model.travel.UntrackedFlight;
 

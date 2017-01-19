@@ -2,7 +2,6 @@ import model.Agent;
 import model.Client;
 import model.Supplier;
 import model.travel.Destination;
-import model.travel.Flight;
 import model.travel.Ticket;
 import model.travel.UntrackedFlight;
 

@@ -8,7 +8,10 @@ import model.communication.message.Message;
 import model.negotiation.Negotiation;
 import model.travel.Ticket;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
 
 /**
  * Represents the common attributes/behavior to

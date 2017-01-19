@@ -2,22 +2,18 @@ package model.negotiation;
 
 import model.Agent;
 import model.Client;
-import model.communication.message.Message;
-import model.travel.Flight;
 import model.Supplier;
+import model.travel.Flight;
 import model.travel.Ticket;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Observable;
+import java.util.*;
 
 /**
  * Created by Vlad on 17/01/2017.
  */
 public class Negotiation {
 
-    static ArrayList<Negotiation> negotiations = new ArrayList<>();
+    static List<Negotiation> negotiations = Collections.synchronizedList(new ArrayList<Negotiation>());
     /**
      * Max number of studied propositions per negotiation dialogue (ie max number of message per agent per dialogue)
      */
@@ -78,7 +74,7 @@ public class Negotiation {
     }
 
     public static Negotiation createOrFindNegotiation(Client origin, Flight flight) {
-        for(Negotiation n : (ArrayList<Negotiation>)negotiations.clone()){
+        for(Negotiation n : negotiations){
             if(n == null) break;//Empêche NullPointerException
             if(n.origin.equals(origin) && n.flight.equals(flight))
                 return n;
