@@ -8,10 +8,7 @@ import model.communication.message.Message;
 import model.negotiation.Negotiation;
 import model.travel.Ticket;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * Represents the common attributes/behavior to
@@ -32,7 +29,7 @@ public abstract class Agent implements Runnable, MessageReceivedListener {
     /**
      * List of all agents ever created
      */
-    public static HashMap<Integer, Agent> agents = new HashMap<Integer, Agent>();
+    public static Map<Integer, Agent> agents = Collections.synchronizedMap(new HashMap<Integer, Agent>());
 
     /**
      * Name of the Agent

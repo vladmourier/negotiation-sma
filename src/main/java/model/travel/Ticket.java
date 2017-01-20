@@ -2,8 +2,10 @@ package model.travel;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by Vlad on 03/01/2017.
@@ -11,7 +13,7 @@ import java.util.HashMap;
 public class Ticket {
 
     private static int lastTicketNumber = -1;
-    public static HashMap<Integer, Ticket> tickets = new HashMap<Integer, Ticket>();
+    public static Map<Integer, Ticket> tickets = Collections.synchronizedMap(new HashMap<Integer, Ticket>());
 
     private int id;
     private Flight flight;
